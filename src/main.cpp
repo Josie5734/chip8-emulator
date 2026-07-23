@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
     GUI gui{chip8.display, chip8.displayWidth, chip8.displayHeight, pixelScale}; // create gui
 
     InitWindow(gui.windowWidth, gui.windowHeight, "CHIP-8"); // create raylib window
-    SetTargetFPS(60);                                        // aim for 60fps for the timers
+    SetTargetFPS(60);                                        // aim for 60fps for the 60hz timers
 
     while (!WindowShouldClose()) {
         /*

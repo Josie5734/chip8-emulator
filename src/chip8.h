@@ -51,7 +51,7 @@ class Chip8 {
     uint8_t getDisplayPixel(int x, int y);         // get value of pixel at x,y
 
     std::array<uint8_t, 4096> memory{0};     // memory
-    std::array<uint16_t, 16> V{0};           // general purpose registers
+    std::array<uint16_t, 16> registers{0};   // general purpose registers
     uint16_t I{0};                           // index register
     uint16_t PC{0x200};                      // program counter, initialised to 0x200 since thats where most programs start
     std::array<uint16_t, 16> stack{0};       // stack
@@ -62,7 +62,47 @@ class Chip8 {
     std::array<uint8_t, 64 * 32> display{0}; // display array. stored as uint8_t but functionally only 1 or 0
     uint16_t opcode;                         // the current opcode during cycle
 
-    const int cyclesPerFrame{700 / 60}; // number of cpu cycles per second e.g 700 = 700hz cpu running at 700/60=11or12 cycles per second
+    const int clockSpeed{600 / 60}; // number of cpu cycles per second e.g 600 = 600hz cpu running at 600/60=10 cycles per second
+
+    // function pointer table for opcodes
+    // taken from https://austinmorlan.com/posts/chip8_emulator/#the-instructions
+    // as it seems to be the best example. i spent a long time trying to figure out what its doing and i couldnt do it better myself
+
+    // define type shortcut for the tables holding functions
+    typedef void (Chip8::*Chip8Func)();
+
+    // define tables that hold the opcode functions
+    Chip8Func table[0xF + 1];
+    Chip8Func table0[0xE + 1];
+    Chip8Func table8[0xE + 1];
+    Chip8Func tableE[0xE + 1];
+    Chip8Func tableF[0x65 + 1];
+
+    // functions to run the functions in the nested opcode function tables
+    void Table0() {
+        ((*this).*(table0[opcode & 0x000Fu]))();
+    };
+
+    void Table8() {
+        ((*this).*(table8[opcode & 0x000Fu]))();
+    };
+
+    void TableE() {
+        ((*this).*(tableE[opcode & 0x000Fu]))();
+    };
+
+    void TableF() {
+        ((*this).*(tableF[opcode & 0x00FFu]))();
+    };
+
+    void OP_NULL() {};
+
+  private:
+    // opcode helpers for getting values
+    uint16_t get_0NNN();
+    uint8_t get_00KK();
+    uint8_t get_0X00();
+    uint8_t get_00Y0();
 
     // opcodes
     void OP_00E0();
@@ -99,37 +139,4 @@ class Chip8 {
     void OP_Fx33();
     void OP_Fx55();
     void OP_Fx65();
-
-    // function pointer table for opcodes
-    // taken from https://austinmorlan.com/posts/chip8_emulator/#the-instructions
-    // as it seems to be the best example. i spent a long time trying to figure out what its doing and i couldnt do it better myself
-
-    // define type shortcut for the tables holding functions
-    typedef void (Chip8::*Chip8Func)();
-
-    // define tables that hold the opcode functions
-    Chip8Func table[0xF + 1];
-    Chip8Func table0[0xE + 1];
-    Chip8Func table8[0xE + 1];
-    Chip8Func tableE[0xE + 1];
-    Chip8Func tableF[0x65 + 1];
-
-    // functions to run the functions in the nested opcode function tables
-    void Table0() {
-        ((*this).*(table0[opcode & 0x000Fu]))();
-    };
-
-    void Table8() {
-        ((*this).*(table8[opcode & 0x000Fu]))();
-    };
-
-    void TableE() {
-        ((*this).*(tableE[opcode & 0x000Fu]))();
-    };
-
-    void TableF() {
-        ((*this).*(tableF[opcode & 0x00FFu]))();
-    };
-
-    void OP_NULL() {};
 };
