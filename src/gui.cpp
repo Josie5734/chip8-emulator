@@ -1,10 +1,19 @@
 #include "gui.h"
+#include "keymap.h"
 #include "raylib.h"
+#include <cstddef>
+#include <cstdint>
 
-GUI::GUI(const std::array<uint8_t, 64 * 32> &d, int dWidth, int dHeight, int pxScale) : pixelScale(pxScale), display(d), displayWidth(dWidth), displayHeight(dHeight) {
+GUI::GUI(const std::array<uint8_t, 64 * 32> &d, std::array<uint8_t, 16> &k, int dWidth, int dHeight, int pxScale) : pixelScale(pxScale), keypad(k), display(d), displayWidth(dWidth), displayHeight(dHeight) {
     padding = pixelScale * 2;                      // generate padding size
     windowWidth = (dWidth * pixelScale) + padding; // generate window size from passed in display size
     windowHeight = (dHeight * pixelScale) + padding;
+}
+
+void GUI::updateKeypad() {
+    for (std::size_t i = 0; i < defaultKeymap.size(); i++) {
+        keypad[i] = static_cast<uint8_t>(IsKeyDown(defaultKeymap[i]));
+    }
 }
 
 void GUI::draw() {

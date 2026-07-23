@@ -17,19 +17,17 @@ int main(int argc, char *argv[]) {
     // TODO: make this not a randomly placed hardcoded number
     const int pixelScale{20};
 
-    GUI gui{chip8.display, chip8.displayWidth, chip8.displayHeight, pixelScale}; // create gui
+    GUI gui{chip8.display, chip8.keypad, chip8.displayWidth, chip8.displayHeight, pixelScale}; // create gui
 
     InitWindow(gui.windowWidth, gui.windowHeight, "CHIP-8"); // create raylib window
     SetTargetFPS(60);                                        // aim for 60fps for the 60hz timers
 
     while (!WindowShouldClose()) {
-        /*
         // do cpu cycles multiple times per second/frame
-        for (int i = 0; i < chip8.cyclesPerFrame; i++) {
+        for (int i = 0; i < chip8.clockSpeed; i++) {
             chip8.cycle();
         }
-        */
-        chip8.cycle();
+        gui.updateKeypad();  // update keypad state
         chip8.timerUpdate(); // update timers once per frame
 
         // draw loop

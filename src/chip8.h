@@ -63,10 +63,10 @@ class Chip8 {
     uint8_t delayTimer{0};                   // delay timer
     uint8_t soundTimer{0};                   // sound timer
     std::array<uint8_t, 64 * 32> display{0}; // display array. stored as uint8_t but functionally only 1 or 0
+    const int clockSpeed{600 / 60};          // number of cpu cycles per second e.g 600 = 600hz cpu running at 600/60=10 cycles per second
     uint16_t opcode;                         // the current opcode during cycle
 
   private:
-    const int clockSpeed{600 / 60}; // number of cpu cycles per second e.g 600 = 600hz cpu running at 600/60=10 cycles per second
     std::mt19937 mt{static_cast<std::mt19937::result_type>(
         std::chrono::steady_clock::now().time_since_epoch().count())}; // random number seed
     std::uniform_int_distribution<> rnd{0, 255};                       // randomm generator with range 0-255 (1 byte)
