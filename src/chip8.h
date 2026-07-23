@@ -8,6 +8,8 @@ class Chip8 {
 
     std::array<uint8_t, 4096> memory{0}; // memory
 
+    const int romMemoryStartIndex{0x200}; // where the rom starts to be loaded in memory
+
   private:
     std::array<uint16_t, 16> V{0};           // general purpose registers
     uint16_t indexRegister{0};               // index register
