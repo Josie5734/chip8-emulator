@@ -54,7 +54,7 @@ class Chip8 {
     uint8_t getDisplayPixel(int x, int y);         // get value of pixel at x,y
 
     std::array<uint8_t, 4096> memory{0};     // memory
-    std::array<uint16_t, 16> registers{0};   // general purpose registers
+    std::array<uint8_t, 16> registers{0};    // general purpose registers
     uint16_t I{0};                           // index register
     uint16_t PC{0x200};                      // program counter, initialised to 0x200 since thats where most programs start
     std::array<uint16_t, 16> stack{0};       // stack

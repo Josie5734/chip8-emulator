@@ -1,6 +1,7 @@
 #include "chip8.h"
 #include <cstddef>
 #include <cstdint>
+#include <iostream>
 
 // opcode helpers
 
@@ -13,10 +14,10 @@ uint8_t Chip8::get_00KK() {
 }
 
 uint8_t Chip8::get_0X00() {
-    return (opcode & 0x0F00) >> 8; // mask for 2d digit and shift into 1st to make it uint8_t rather than uint16_t
+    return (opcode & 0x0F00) >> 8; // mask for 2nd digit and shift into 1st to make 0-15
 }
 uint8_t Chip8::get_00Y0() {
-    return opcode & 0x00F0; // mask for 2nd digit
+    return opcode & 0x00F0 >> 4; // mask for 3rd digit and shift into 1st to make 0-15
 }
 
 // opcode functions
@@ -28,8 +29,9 @@ void Chip8::OP_00E0() {
 
 // RET - return from subroutine
 void Chip8::OP_00EE() {
-    PC = stack[SP]; // pc set to address at top of stack
     SP--;           // pop stack
+    PC = stack[SP]; // pc set to address at top of stack
+    std::cerr << "00EE: SP = " << SP << std::endl;
 }
 
 // JP addr - set PC to nnn
@@ -42,8 +44,8 @@ void Chip8::OP_1nnn() {
 // Call nnn - put current PC on stack and jump PC to nnn
 void Chip8::OP_2nnn() {
     uint16_t nnn = get_0NNN();
-    SP++;
     stack[SP] = PC;
+    SP++;
     PC = nnn;
 }
 
@@ -69,7 +71,7 @@ void Chip8::OP_4xkk() {
 void Chip8::OP_5xy0() {
     uint8_t Vx = get_0X00();
     uint8_t Vy = get_00Y0();
-    if (Vx == Vy) {
+    if (registers[Vx] == registers[Vy]) {
         PC += PC_INC_VAL;
     }
 }
