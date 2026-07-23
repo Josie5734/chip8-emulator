@@ -7,6 +7,9 @@
 // address where rom starts to be loaded into memory
 const int ROM_START_ADDRESS{0x200};
 
+// program counter increment value
+const int PC_INC_VAL{2};
+
 // display dimensions
 const int DISPLAY_WIDTH{64};
 const int DISPLAY_HEIGHT{32};
@@ -95,4 +98,37 @@ class Chip8 {
     void OP_Fx33();
     void OP_Fx55();
     void OP_Fx65();
+
+    // function pointer table for opcodes
+    // taken from https://austinmorlan.com/posts/chip8_emulator/#the-instructions
+    // as it seems to be the best example. i spent a long time trying to figure out what its doing and i couldnt do it better myself
+
+    // define type shortcut for the tables holding functions
+    typedef void (Chip8::*Chip8Func)();
+
+    // define tables that hold the opcode functions
+    Chip8Func table[0xF + 1];
+    Chip8Func table0[0xE + 1];
+    Chip8Func table8[0xE + 1];
+    Chip8Func tableE[0xE + 1];
+    Chip8Func tableF[0x65 + 1];
+
+    // functions to run the functions in the nested opcode function tables
+    void Table0() {
+        ((*this).*(table0[opcode & 0x000Fu]))();
+    };
+
+    void Table8() {
+        ((*this).*(table8[opcode & 0x000Fu]))();
+    };
+
+    void TableE() {
+        ((*this).*(tableE[opcode & 0x000Fu]))();
+    };
+
+    void TableF() {
+        ((*this).*(tableF[opcode & 0x00FFu]))();
+    };
+
+    void OP_NULL() {};
 };
