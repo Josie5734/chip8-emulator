@@ -5,15 +5,17 @@
 
 int main(int argc, char *argv[]) {
     // check launched with correct args
-    if (argc != 3) {
-        std::cerr << "usage: " << argv[0] << " <ROM file> <scale>" << std::endl;
+    if (argc != 2) {
+        std::cerr << "usage: " << argv[0] << " <ROM file>" << std::endl;
         return 1;
     }
 
     Chip8 chip8{};          // create chip8 instance
     chip8.loadROM(argv[1]); // load given rom
 
-    const int pixelScale{std::stoi(argv[2])};
+    // ratio of chip8.display pixels to raylib rectangle size
+    // TODO: make this not a randomly placed hardcoded number
+    const int pixelScale{20};
 
     GUI gui{chip8.display, chip8.displayWidth, chip8.displayHeight, pixelScale}; // create gui
 

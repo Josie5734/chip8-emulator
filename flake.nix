@@ -46,6 +46,7 @@
 
                     self.formatter.${system}
 
+                    raylib
                     pkg-config
                   ]
                   ++ lib.optionals (!stdenv.hostPlatform.isDarwin) [ gdb ];
