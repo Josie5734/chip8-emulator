@@ -10,10 +10,6 @@ const int ROM_START_ADDRESS{0x200};
 // program counter increment value
 const int PC_INC_VAL{2};
 
-// display dimensions
-const int DISPLAY_WIDTH{64};
-const int DISPLAY_HEIGHT{32};
-
 // fontset taken from https://austinmorlan.com/posts/chip8_emulator/
 // size of fontset in bytes
 const int FONTSET_SIZE{80};
@@ -46,12 +42,15 @@ class Chip8 {
     Chip8();                            // constructor
     bool loadROM(std::string filepath); // load a rom file into memory, return true if successful, else false
     void cycle();                       // a cpu cycle: fetch,decode,execute
+    void timerUpdate();                 // update any running timers
+
+    const int displayWidth{64};
+    const int displayHeight{32};
 
     void setDisplayPixel(int x, int y, uint8_t v); // set v at the pixel at x,y in display
     uint8_t getDisplayPixel(int x, int y);         // get value of pixel at x,y
 
-    std::array<uint8_t, 4096> memory{0}; // memory
-
+    std::array<uint8_t, 4096> memory{0};     // memory
     std::array<uint16_t, 16> V{0};           // general purpose registers
     uint16_t I{0};                           // index register
     uint16_t PC{0x200};                      // program counter, initialised to 0x200 since thats where most programs start
@@ -62,6 +61,8 @@ class Chip8 {
     uint8_t soundTimer{0};                   // sound timer
     std::array<uint8_t, 64 * 32> display{0}; // display array. stored as uint8_t but functionally only 1 or 0
     uint16_t opcode;                         // the current opcode during cycle
+
+    const int cyclesPerFrame{700 / 60}; // number of cpu cycles per second e.g 700 = 700hz cpu running at 700/60=11or12 cycles per second
 
     // opcodes
     void OP_00E0();

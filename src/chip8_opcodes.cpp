@@ -1,5 +1,6 @@
 #include "chip8.h"
 #include <cstdint>
+#include <iostream>
 
 // opcodes
 
@@ -64,6 +65,7 @@ void Chip8::OP_Cxkk() {}
 // DRW - draw n-byte sprite starting at memory location I at Vx,Vy
 // set VF if collision
 void Chip8::OP_Dxyn() {
+    std::cout << "dxyn drawing\n";
     uint8_t x = (opcode & 0x0F00) >> 8;
     uint8_t y = (opcode & 0x00F0) >> 4;
     uint8_t n = opcode & 0x000F;
@@ -72,17 +74,21 @@ void Chip8::OP_Dxyn() {
 
     V[0xf] = 0; // set VF to 0, gets changed to 1 if any pixel in the sprite collides
 
+    std::cout << "I: " << static_cast<int>(I) << std::endl;
+
     // for n bytes
     for (int i = 0; i < n; i++) {     // i is the row of the sprite where each byte is a single row
         uint8_t byte = memory[I + i]; // read byte (row)
 
+        std::cout << "memory[I]: " << static_cast<int>(memory[I]) << std::endl;
+        std::cout << "memory[I+i]: " << static_cast<int>(memory[I + i]) << std::endl;
         // for each bit in the byte (column)
         for (int b = 7; b >= 0; b--) { // starting from the leftmost bit and working to the right
             // shift the target bit b to position 0 and mask off everything else
             uint8_t spritePixel = (byte >> (7 - b)) & 0x1;
 
-            int wrappedX = (V[x] + b) % DISPLAY_WIDTH; // wrap the pixel and use those values for collision + drawing
-            int wrappedY = (V[y] + i) % DISPLAY_HEIGHT;
+            int wrappedX = (V[x] + b) % displayWidth; // wrap the pixel and use those values for collision + drawing
+            int wrappedY = (V[y] + i) % displayHeight;
 
             uint8_t displayPixel = getDisplayPixel(wrappedX, wrappedY);
             bool collide = displayPixel & spritePixel;

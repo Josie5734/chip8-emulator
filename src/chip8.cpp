@@ -68,11 +68,11 @@ Chip8::Chip8() {
 
 // display buffer
 void Chip8::setDisplayPixel(int x, int y, uint8_t v) {
-    display[y * DISPLAY_WIDTH + x] = v;
+    display[y * displayWidth + x] = v;
 }
 
 uint8_t Chip8::getDisplayPixel(int x, int y) {
-    return display[y * DISPLAY_WIDTH + x];
+    return display[y * displayWidth + x];
 }
 
 bool Chip8::loadROM(std::string filepath) {
@@ -124,7 +124,9 @@ void Chip8::cycle() {
 
     // execute
     ((*this).*(table[(opcode & 0xF000) >> 12]))(); // calls the table[] with the opcodes first value 0x0 so it can figure out which command to call
+}
 
+void Chip8::timerUpdate() {
     // manage timers
     if (delayTimer > 0) {
         delayTimer--;
