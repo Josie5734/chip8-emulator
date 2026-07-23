@@ -1,6 +1,7 @@
 #include "chip8.h"
 #include <fstream>
 #include <iostream>
+#include <random>
 #include <string>
 
 // constructor
@@ -64,6 +65,11 @@ Chip8::Chip8() {
     tableF[0x33] = &Chip8::OP_Fx33;
     tableF[0x55] = &Chip8::OP_Fx55;
     tableF[0x65] = &Chip8::OP_Fx65;
+}
+
+// random numbers
+uint8_t Chip8::genRandNum() {
+    return rnd(mt); // return random number
 }
 
 // display buffer

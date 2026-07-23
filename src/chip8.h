@@ -1,7 +1,9 @@
 #pragma once
 
 #include <array>
+#include <chrono>
 #include <cstdint>
+#include <random>
 #include <string>
 
 // address where rom starts to be loaded into memory
@@ -43,8 +45,9 @@ class Chip8 {
     bool loadROM(std::string filepath); // load a rom file into memory, return true if successful, else false
     void cycle();                       // a cpu cycle: fetch,decode,execute
     void timerUpdate();                 // update any running timers
+    uint8_t genRandNum();               // generate a random number
 
-    const int displayWidth{64};
+    const int displayWidth{64}; // display sizes
     const int displayHeight{32};
 
     void setDisplayPixel(int x, int y, uint8_t v); // set v at the pixel at x,y in display
@@ -56,13 +59,17 @@ class Chip8 {
     uint16_t PC{0x200};                      // program counter, initialised to 0x200 since thats where most programs start
     std::array<uint16_t, 16> stack{0};       // stack
     uint8_t SP{0};                           // pointer for stack
-    std::array<bool, 16> keypad{0};          // keypad keys
+    std::array<uint8_t, 16> keypad{0};       // keypad keys - flipped between 1 for down and 0 for up
     uint8_t delayTimer{0};                   // delay timer
     uint8_t soundTimer{0};                   // sound timer
     std::array<uint8_t, 64 * 32> display{0}; // display array. stored as uint8_t but functionally only 1 or 0
     uint16_t opcode;                         // the current opcode during cycle
 
+  private:
     const int clockSpeed{600 / 60}; // number of cpu cycles per second e.g 600 = 600hz cpu running at 600/60=10 cycles per second
+    std::mt19937 mt{static_cast<std::mt19937::result_type>(
+        std::chrono::steady_clock::now().time_since_epoch().count())}; // random number seed
+    std::uniform_int_distribution<> rnd{0, 255};                       // randomm generator with range 0-255 (1 byte)
 
     // function pointer table for opcodes
     // taken from https://austinmorlan.com/posts/chip8_emulator/#the-instructions
@@ -97,7 +104,6 @@ class Chip8 {
 
     void OP_NULL() {};
 
-  private:
     // opcode helpers for getting values
     uint16_t get_0NNN();
     uint8_t get_00KK();

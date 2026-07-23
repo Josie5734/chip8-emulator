@@ -1,6 +1,6 @@
 #include "chip8.h"
+#include <cstddef>
 #include <cstdint>
-#include <iostream>
 
 // opcode helpers
 
@@ -145,9 +145,33 @@ void Chip8::OP_8xy6() {
     registers[0xf] = registers[Vx] & 0x1; // save least significant bit, either 1 or 0
     registers[Vx] = registers[Vx] >> 1;   // shift right by 1 digit (divide by 2)
 }
-void Chip8::OP_8xy7() {}
-void Chip8::OP_8xyE() {}
-void Chip8::OP_9xy0() {}
+
+// SUBN - if Vy > Vx, VF = 1 else VF = 0. Vx = Vy - Vx
+void Chip8::OP_8xy7() {
+    uint8_t Vx = get_0X00();
+    uint8_t Vy = get_00Y0();
+    registers[0xf] = 0; // set VF to 0 by default
+    if (registers[Vy] > registers[Vx]) {
+        registers[0xf] = 1;
+    }
+    registers[Vx] = registers[Vy] - registers[Vx];
+}
+
+// SHL - Shift Left
+void Chip8::OP_8xyE() {
+    uint8_t Vx = get_0X00();
+    registers[0xf] = registers[Vx] & 0x80; // extract MSB and set to VF
+    registers[Vx] = registers[Vx] << 1;    // left shift by 1 digit (x2)
+}
+
+// SNE - skip next instruction if Vx != Vy
+void Chip8::OP_9xy0() {
+    uint8_t Vx = get_0X00();
+    uint8_t Vy = get_00Y0();
+    if (registers[Vx] != registers[Vy]) {
+        PC += PC_INC_VAL;
+    }
+}
 
 // LD - set I = nnn
 void Chip8::OP_Annn() {
@@ -155,13 +179,22 @@ void Chip8::OP_Annn() {
     I = nnn;
 }
 
-void Chip8::OP_Bnnn() {}
-void Chip8::OP_Cxkk() {}
+// JP - set PC to nnn + V0
+void Chip8::OP_Bnnn() {
+    uint16_t nnn = get_0NNN();
+    PC = nnn + registers[0x0];
+}
+
+// RND - Vx = random byte(number 0 to 255) & kk
+void Chip8::OP_Cxkk() {
+    uint8_t Vx = get_0X00();
+    uint8_t kk = opcode & 0x00FF;
+    registers[Vx] = genRandNum() & kk;
+}
 
 // DRW - draw n-byte sprite starting at memory location I at Vx,Vy
 // set VF if collision
 void Chip8::OP_Dxyn() {
-    std::cout << "dxyn drawing\n";
     uint8_t x = (opcode & 0x0F00) >> 8;
     uint8_t y = (opcode & 0x00F0) >> 4;
     uint8_t n = opcode & 0x000F;
@@ -169,8 +202,6 @@ void Chip8::OP_Dxyn() {
     n = n & 0x0F; // mask n to get just the nibble used for n-bytes of sprite
 
     registers[0xf] = 0; // set VF to 0, gets changed to 1 if any pixel in the sprite collides
-
-    std::cout << "I: " << static_cast<int>(I) << std::endl;
 
     // for n bytes
     for (int i = 0; i < n; i++) {     // i is the row of the sprite where each byte is a single row
@@ -195,14 +226,98 @@ void Chip8::OP_Dxyn() {
     }
 }
 
-void Chip8::OP_Ex9E() {}
-void Chip8::OP_ExA1() {}
-void Chip8::OP_Fx07() {}
-void Chip8::OP_Fx0A() {}
-void Chip8::OP_Fx15() {}
-void Chip8::OP_Fx18() {}
-void Chip8::OP_Fx1E() {}
-void Chip8::OP_Fx29() {}
-void Chip8::OP_Fx33() {}
-void Chip8::OP_Fx55() {}
-void Chip8::OP_Fx65() {}
+// SKP - skip next instruction if key Vx is pressed(down position)
+void Chip8::OP_Ex9E() {
+    uint8_t Vx = get_0X00();
+    if (keypad[Vx]) { // if key down(key==1)
+        PC += PC_INC_VAL;
+    }
+}
+
+// SKNP - skip next instruction if key Vx is not pressed
+void Chip8::OP_ExA1() {
+    uint8_t Vx = get_0X00();
+    if (!keypad[Vx]) { // if key down(key==1)
+        PC += PC_INC_VAL;
+    }
+}
+
+// LD - set Vx = delay timer value
+void Chip8::OP_Fx07() {
+    uint8_t Vx = get_0X00();
+    registers[Vx] = delayTimer;
+}
+
+// LD - wait for key press, store value of key in Vx
+void Chip8::OP_Fx0A() {
+    uint8_t Vx = get_0X00();
+    bool pressed{false}; // key was pressed (default no)
+
+    for (size_t i = 0; i < keypad.size(); i++) { // for every key on keypad
+        if (keypad[i]) {                         // if key is down
+            registers[Vx] = i;                   // store key number in register
+            pressed = true;                      // mark that a key was pressed
+            break;                               // exit loop
+        }
+    }
+    if (!pressed) {       // if no key was pressed
+        PC -= PC_INC_VAL; // move program counter back one instruction so it repeats
+    }
+}
+
+// LD DT - set delayTimer = Vx
+void Chip8::OP_Fx15() {
+    uint8_t Vx = get_0X00();
+    delayTimer = registers[Vx];
+}
+
+// LD ST - set soundTimer = Vx
+void Chip8::OP_Fx18() {
+    uint8_t Vx = get_0X00();
+    soundTimer = registers[Vx];
+}
+
+// ADD I - set I = I + Vx
+void Chip8::OP_Fx1E() {
+    uint8_t Vx = get_0X00();
+    I = I + registers[Vx];
+}
+
+// LD F - set I = location of a font sprite for digit Vx
+void Chip8::OP_Fx29() {
+    uint8_t Vx = get_0X00();
+    I = memory[Vx * 5]; // font sprites are 5 bytes each and loaded in order (0x5=0,1x5=5 etc)
+}
+
+// LD B - take decimal value of Vx,store hundreds in I, tens in I+1 and ones in I+2
+void Chip8::OP_Fx33() {
+    uint8_t Vx = get_0X00();
+    uint8_t value = registers[Vx]; // e.g value = 143
+
+    // ones
+    memory[I + 2] = value % 10; // 143 % 10 = 3
+    value = value / 10;         // 143 / 10 = 14
+
+    // tens
+    memory[I + 1] = value % 10; // 14 % 10 = 4
+    value = value / 10;         // 14 / 10 = 1
+
+    // hundreds
+    memory[I] = value % 10; // 1 % 10 = 1
+}
+
+// LD [I] - copy values from registers V0 to Vx into memory starting at location I
+void Chip8::OP_Fx55() {
+    uint8_t Vx = get_0X00();
+    for (int i = 0; i <= Vx; i++) {
+        memory[I + i] = registers[i];
+    }
+}
+
+// LD Vx [I] - read into registers V0 to Vx starting from memory location I
+void Chip8::OP_Fx65() {
+    uint8_t Vx = get_0X00();
+    for (int i = 0; i <= Vx; i++) {
+        registers[i] = memory[I + i];
+    }
+}
