@@ -12,7 +12,11 @@ GUI::GUI(const std::array<uint8_t, 64 * 32> &d, std::array<uint8_t, 16> &k, int 
 
 void GUI::updateKeypad() {
     for (std::size_t i = 0; i < defaultKeymap.size(); i++) {
-        keypad[i] = static_cast<uint8_t>(IsKeyDown(defaultKeymap[i]));
+        if (IsKeyDown(defaultKeymap[i])) {
+            keypad[i] = 1;
+        } else {
+            keypad[i] = 0;
+        }
     }
 }
 

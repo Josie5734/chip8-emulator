@@ -1,7 +1,6 @@
 #include "chip8.h"
 #include <cstddef>
 #include <cstdint>
-#include <iostream>
 
 // opcode helpers
 
@@ -17,7 +16,7 @@ uint8_t Chip8::get_0X00() {
     return (opcode & 0x0F00) >> 8; // mask for 2nd digit and shift into 1st to make 0-15
 }
 uint8_t Chip8::get_00Y0() {
-    return opcode & 0x00F0 >> 4; // mask for 3rd digit and shift into 1st to make 0-15
+    return (opcode & 0x00F0) >> 4; // mask for 3rd digit and shift into 1st to make 0-15
 }
 
 // opcode functions
@@ -31,7 +30,6 @@ void Chip8::OP_00E0() {
 void Chip8::OP_00EE() {
     SP--;           // pop stack
     PC = stack[SP]; // pc set to address at top of stack
-    std::cerr << "00EE: SP = " << SP << std::endl;
 }
 
 // JP addr - set PC to nnn
@@ -123,47 +121,52 @@ void Chip8::OP_8xy4() {
     uint8_t Vx = get_0X00();
     uint8_t Vy = get_00Y0();
     uint16_t calc = registers[Vx] + registers[Vy];
-    registers[0xf] = 0; // set VF to 0
-    if (calc > 255) {
-        registers[0xf] = 1; // set VF to 1 if overflow
-    }
-    registers[Vx] = calc & 0xFF; // set to only the last 8 bits (<256)
+    registers[Vx] = calc & 0xFF;           // set to only the last 8 bits (<256)
+    registers[0xf] = (calc > 255) ? 1 : 0; // set VF last so it doesnt overwrite anything
 }
 
 // SUB - set Vx = Vx - Vy. set VF to 1 if Vx > Vy
 void Chip8::OP_8xy5() {
     uint8_t Vx = get_0X00();
     uint8_t Vy = get_00Y0();
-    registers[0xf] = 0; // set VF to 0 by default
-    if (registers[Vx] > registers[Vy]) {
-        registers[0xf] = 1;
-    }
-    registers[Vx] = registers[Vx] - registers[Vy];
+
+    uint8_t x = registers[Vx]; // store values for checks without changing them
+    uint8_t y = registers[Vy];
+    uint8_t flag = (x >= y) ? 1 : 0; // compute VF check
+
+    registers[Vx] = x - y; // set calculation in Vx
+    registers[0xf] = flag; // set VF
 }
 
 // SHR - if LSB of Vx == 1, VF = 1, else VF = 0. then Vx = Vx / 2
 void Chip8::OP_8xy6() {
     uint8_t Vx = get_0X00();
-    registers[0xf] = registers[Vx] & 0x1; // save least significant bit, either 1 or 0
-    registers[Vx] = registers[Vx] >> 1;   // shift right by 1 digit (divide by 2)
+    uint8_t x = registers[Vx]; // store Vx value
+
+    registers[Vx] = x >> 1;   // shift right by 1 digit (divide by 2)
+    registers[0xf] = x & 0x1; // save least significant bit, either 1 or 0
 }
 
 // SUBN - if Vy > Vx, VF = 1 else VF = 0. Vx = Vy - Vx
 void Chip8::OP_8xy7() {
     uint8_t Vx = get_0X00();
     uint8_t Vy = get_00Y0();
-    registers[0xf] = 0; // set VF to 0 by default
-    if (registers[Vy] > registers[Vx]) {
-        registers[0xf] = 1;
-    }
-    registers[Vx] = registers[Vy] - registers[Vx];
+
+    uint8_t x = registers[Vx]; // store values for checks without changing them
+    uint8_t y = registers[Vy];
+    uint8_t flag = (y >= x) ? 1 : 0; // compute VF check
+
+    registers[Vx] = y - x;
+    registers[0xf] = flag;
 }
 
 // SHL - Shift Left
 void Chip8::OP_8xyE() {
     uint8_t Vx = get_0X00();
-    registers[0xf] = registers[Vx] & 0x80; // extract MSB and set to VF
-    registers[Vx] = registers[Vx] << 1;    // left shift by 1 digit (x2)
+    uint8_t x = registers[Vx]; // store Vx value
+
+    registers[Vx] = x << 1;           // left shift by 1 digit (x2)
+    registers[0xf] = (x & 0x80) >> 7; // extract MSB, shift to just first bit(1 or 0) and set to VF
 }
 
 // SNE - skip next instruction if Vx != Vy
@@ -197,11 +200,9 @@ void Chip8::OP_Cxkk() {
 // DRW - draw n-byte sprite starting at memory location I at Vx,Vy
 // set VF if collision
 void Chip8::OP_Dxyn() {
-    uint8_t x = (opcode & 0x0F00) >> 8;
-    uint8_t y = (opcode & 0x00F0) >> 4;
-    uint8_t n = opcode & 0x000F;
-
-    n = n & 0x0F; // mask n to get just the nibble used for n-bytes of sprite
+    uint8_t Vx = get_0X00();
+    uint8_t Vy = get_00Y0();
+    uint8_t n = opcode & 0x000F; // get the height of the sprite
 
     registers[0xf] = 0; // set VF to 0, gets changed to 1 if any pixel in the sprite collides
 
@@ -213,17 +214,14 @@ void Chip8::OP_Dxyn() {
         for (int b = 7; b >= 0; b--) { // starting from the leftmost bit and working to the right
             // shift the target bit b to position 0 and mask off everything else
             uint8_t spritePixel = (byte >> (7 - b)) & 0x1;
-
-            int wrappedX = (registers[x] + b) % displayWidth; // wrap the pixel and use those values for collision + drawing
-            int wrappedY = (registers[y] + i) % displayHeight;
-
-            uint8_t displayPixel = getDisplayPixel(wrappedX, wrappedY);
-            bool collide = displayPixel & spritePixel;
-
-            if (collide) { // set collision flag if any collision happens
+            int wrappedX = (registers[Vx] + b) % displayWidth; // wrap the pixel around display
+            int wrappedY = (registers[Vy] + i) % displayHeight;
+            uint8_t displayPixel = getDisplayPixel(wrappedX, wrappedY); // place pixel on display
+            bool collide = displayPixel & spritePixel;                  // check if pixels collide
+            if (collide) {                                              // set collision flag if any collision happens
                 registers[0xf] = 1;
             }
-            setDisplayPixel(wrappedX, wrappedY, displayPixel ^ spritePixel);
+            setDisplayPixel(wrappedX, wrappedY, displayPixel ^ spritePixel); // xor pixel onto display
         }
     }
 }
@@ -288,7 +286,7 @@ void Chip8::OP_Fx1E() {
 // LD F - set I = location of a font sprite for digit Vx
 void Chip8::OP_Fx29() {
     uint8_t Vx = get_0X00();
-    I = memory[Vx * 5]; // font sprites are 5 bytes each and loaded in order (0x5=0,1x5=5 etc)
+    I = FONTSET_START_ADDRESS + (5 * registers[Vx]); // starting from the start address of the fontset, get digitIndex * 5(bytecount of a single digit sprite)
 }
 
 // LD B - take decimal value of Vx,store hundreds in I, tens in I+1 and ones in I+2

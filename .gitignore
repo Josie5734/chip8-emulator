@@ -3,4 +3,5 @@
 build/
 .clang-format
 *.ch8
+tests/
 notes.md
