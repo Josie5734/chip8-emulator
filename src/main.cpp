@@ -23,11 +23,11 @@ int main(int argc, char *argv[]) {
     SetTargetFPS(60);                                        // aim for 60fps for the 60hz timers
 
     while (!WindowShouldClose()) {
+        gui.updateKeypad(); // update keypad state
         // do cpu cycles multiple times per second/frame
         for (int i = 0; i < chip8.clockSpeed; i++) {
             chip8.cycle();
         }
-        gui.updateKeypad();  // update keypad state
         chip8.timerUpdate(); // update timers once per frame
 
         // draw loop

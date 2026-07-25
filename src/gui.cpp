@@ -3,6 +3,8 @@
 #include "raylib.h"
 #include <cstddef>
 #include <cstdint>
+#include <sstream>
+#include <string>
 
 GUI::GUI(const std::array<uint8_t, 64 * 32> &d, std::array<uint8_t, 16> &k, int dWidth, int dHeight, int pxScale) : pixelScale(pxScale), keypad(k), display(d), displayWidth(dWidth), displayHeight(dHeight) {
     padding = pixelScale * 2;                      // generate padding size
@@ -14,7 +16,7 @@ void GUI::updateKeypad() {
     for (std::size_t i = 0; i < defaultKeymap.size(); i++) {
         if (IsKeyDown(defaultKeymap[i])) {
             keypad[i] = 1;
-        } else {
+        } else if (IsKeyUp(defaultKeymap[i])) {
             keypad[i] = 0;
         }
     }

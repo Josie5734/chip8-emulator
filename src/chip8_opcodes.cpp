@@ -1,6 +1,7 @@
 #include "chip8.h"
 #include <cstddef>
 #include <cstdint>
+#include <iostream>
 
 // opcode helpers
 
@@ -47,7 +48,7 @@ void Chip8::OP_2nnn() {
     PC = nnn;
 }
 
-// SE - skip next instruction of Vx == kk
+// SE - skip next instruction if Vx == kk
 void Chip8::OP_3xkk() {
     uint8_t Vx = get_0X00();
     uint8_t kk = get_00KK();
@@ -229,7 +230,7 @@ void Chip8::OP_Dxyn() {
 // SKP - skip next instruction if key Vx is pressed(down position)
 void Chip8::OP_Ex9E() {
     uint8_t Vx = get_0X00();
-    if (keypad[Vx]) { // if key down(key==1)
+    if (keypad[registers[Vx]]) { // if key down(key==1)
         PC += PC_INC_VAL;
     }
 }
@@ -237,7 +238,7 @@ void Chip8::OP_Ex9E() {
 // SKNP - skip next instruction if key Vx is not pressed
 void Chip8::OP_ExA1() {
     uint8_t Vx = get_0X00();
-    if (!keypad[Vx]) { // if key down(key==1)
+    if (!keypad[registers[Vx]]) { // if key down(key==1)
         PC += PC_INC_VAL;
     }
 }
@@ -251,6 +252,25 @@ void Chip8::OP_Fx07() {
 // LD - wait for key press, store value of key in Vx
 void Chip8::OP_Fx0A() {
     uint8_t Vx = get_0X00();
+
+    if (!waitForKeyRelease) { // if not waiting for any releases
+        for (size_t i = 0; i < keypad.size(); i++) {
+            if (keypad[i]) {              // if key down
+                waitingKey = i;           // store key to wait for being released
+                waitForKeyRelease = true; // set waiting state
+                break;
+            }
+        }
+        PC -= PC_INC_VAL; // decrement PC to go back to this instruction again
+    } else {
+        if (!keypad[waitingKey]) {      // if the waiting key is no longer pressed
+            registers[Vx] = waitingKey; // store it in the register
+            waitForKeyRelease = false;  // set no longer waiting
+        } else {
+            PC -= PC_INC_VAL; // else key is still down, repeat instruction
+        }
+    }
+    /*
     bool pressed{false}; // key was pressed (default no)
 
     for (size_t i = 0; i < keypad.size(); i++) { // for every key on keypad
@@ -263,6 +283,7 @@ void Chip8::OP_Fx0A() {
     if (!pressed) {       // if no key was pressed
         PC -= PC_INC_VAL; // move program counter back one instruction so it repeats
     }
+    */
 }
 
 // LD DT - set delayTimer = Vx
@@ -312,6 +333,7 @@ void Chip8::OP_Fx55() {
     for (int i = 0; i <= Vx; i++) {
         memory[I + i] = registers[i];
     }
+    I += Vx + 1; // increments the I register, only in original Chip8
 }
 
 // LD Vx [I] - read into registers V0 to Vx starting from memory location I
@@ -320,4 +342,5 @@ void Chip8::OP_Fx65() {
     for (int i = 0; i <= Vx; i++) {
         registers[i] = memory[I + i];
     }
+    I += Vx + 1; // increments the I register, only in original Chip8
 }
