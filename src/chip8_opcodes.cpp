@@ -101,6 +101,7 @@ void Chip8::OP_8xy1() {
     uint8_t Vx = get_0X00();
     uint8_t Vy = get_00Y0();
     registers[Vx] = registers[Vx] | registers[Vy];
+    registers[0xf] = 0; // AND,OR and XOR reset VF to 0
 }
 
 // AND - set Vx = Vx AND Vy
@@ -108,6 +109,7 @@ void Chip8::OP_8xy2() {
     uint8_t Vx = get_0X00();
     uint8_t Vy = get_00Y0();
     registers[Vx] = registers[Vx] & registers[Vy];
+    registers[0xf] = 0; // AND,OR and XOR reset VF to 0
 }
 
 // XOR - set Vx = Vx XOR Vy
@@ -115,6 +117,7 @@ void Chip8::OP_8xy3() {
     uint8_t Vx = get_0X00();
     uint8_t Vy = get_00Y0();
     registers[Vx] = registers[Vx] ^ registers[Vy];
+    registers[0xf] = 0; // AND,OR and XOR reset VF to 0
 }
 
 // ADD - set Vx = Vx + Vy. if result > 8bits, set VF = 1, else VF = 0
@@ -204,25 +207,32 @@ void Chip8::OP_Dxyn() {
     uint8_t Vx = get_0X00();
     uint8_t Vy = get_00Y0();
     uint8_t n = opcode & 0x000F; // get the height of the sprite
+    registers[0xf] = 0;          // set VF to 0 to indicate no clipping, only set to 1 if there is clipping
 
-    registers[0xf] = 0; // set VF to 0, gets changed to 1 if any pixel in the sprite collides
+    int wrapX = registers[Vx] % displayWidth; // wrap the starting position of the sprite
+    int wrapY = registers[Vy] % displayHeight;
 
     // for n bytes
-    for (int i = 0; i < n; i++) {     // i is the row of the sprite where each byte is a single row
+    for (int i = 0; i < n; i++) {    // i is the row of the sprite where each byte is a single row
+        int yCoord = wrapY + i;      // get the yCoord of the specific row
+        if (yCoord >= displayHeight) // if this row goes off the bottom screen, skip it and all rows after to clip the drawing
+            break;                   // i think this is only done in the original Chip8
+
         uint8_t byte = memory[I + i]; // read byte (row)
 
         // for each bit in the byte (column)
         for (int b = 7; b >= 0; b--) { // starting from the leftmost bit and working to the right
             // shift the target bit b to position 0 and mask off everything else
+            int xCoord = wrapX + b;     // get the xCoord of the specific column pixel being drawn
+            if (xCoord >= displayWidth) // skip this column if its off the screen
+                continue;               // also only applies to original Chip8
+
             uint8_t spritePixel = (byte >> (7 - b)) & 0x1;
-            int wrappedX = (registers[Vx] + b) % displayWidth; // wrap the pixel around display
-            int wrappedY = (registers[Vy] + i) % displayHeight;
-            uint8_t displayPixel = getDisplayPixel(wrappedX, wrappedY); // place pixel on display
-            bool collide = displayPixel & spritePixel;                  // check if pixels collide
-            if (collide) {                                              // set collision flag if any collision happens
+            uint8_t displayPixel = getDisplayPixel(xCoord, yCoord); // place pixel on display
+            bool collide = displayPixel & spritePixel;              // check if pixels collide
+            if (collide)                                            // set VF to 1 if any pixel in the sprite collides
                 registers[0xf] = 1;
-            }
-            setDisplayPixel(wrappedX, wrappedY, displayPixel ^ spritePixel); // xor pixel onto display
+            setDisplayPixel(xCoord, yCoord, displayPixel ^ spritePixel); // xor pixel onto display
         }
     }
 }
