@@ -11,8 +11,10 @@ class GUI {
     int windowHeight{};
     int padding{}; // padding around screen
 
-    void updateKeypad(); // checking keypad state
-    void draw();         // draw function
+    void updateKeypad();           // checking keypad state
+    void drawScreen(int x, int y); // draw the Chip8 screen at screen coords x,y
+    int drawUI(int x, int y);      // draw emulator ui at screen coords x,y. returns the y height of the ui section (not including padding at bottom)
+    void draw();                   // main draw function
 
   private:
     int pixelScale{1};                             // ratio of rectangle size to actual pixel size e.g 5x scale means one chip8 pixel = 5x5px rectangle in gui

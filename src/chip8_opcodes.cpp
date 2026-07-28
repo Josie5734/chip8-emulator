@@ -1,7 +1,6 @@
 #include "chip8.h"
 #include <cstddef>
 #include <cstdint>
-#include <iostream>
 
 // opcode helpers
 

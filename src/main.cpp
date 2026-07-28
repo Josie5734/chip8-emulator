@@ -17,18 +17,26 @@ int main(int argc, char *argv[]) {
     // TODO: make this not a randomly placed hardcoded number
     const int pixelScale{20};
 
+    // TODO:
+    //  make better setup for setting display size
+    //  atm GUI is passed the size of the Chip8 screen (in pixels) and a pixel scale(for how big to draw each pixel) then calculates a padding value as (scale*scale)
+    // things to ideally define:
+    //      there should be a 1cell padding border all the way around the edge of the window
+    //      all ui elements should be separated from eachother by atleast 1cell (can just use defined padding for this)
+    //      maybe split off drawScreen(x,y) and drawUI(x,y) into separate functions that are then called by draw() which calculates their x,y
+
     GUI gui{chip8.display, chip8.keypad, chip8.displayWidth, chip8.displayHeight, pixelScale}; // create gui
 
     InitWindow(gui.windowWidth, gui.windowHeight, "CHIP-8"); // create raylib window
     SetTargetFPS(60);                                        // aim for 60fps for the 60hz timers
 
     while (!WindowShouldClose()) {
-        gui.updateKeypad(); // update keypad state
+        chip8.timerUpdate(); // update timers once per frame
         // do cpu cycles multiple times per second/frame
         for (int i = 0; i < chip8.clockSpeed; i++) {
-            chip8.cycle();
+            gui.updateKeypad(); // update keypad state
+            chip8.cycle();      // cpu fetch/decode/execute cycle
         }
-        chip8.timerUpdate(); // update timers once per frame
 
         // draw loop
         BeginDrawing();
