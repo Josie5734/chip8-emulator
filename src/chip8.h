@@ -47,6 +47,9 @@ class Chip8 {
     void timerUpdate();                 // update any running timers
     uint8_t genRandNum();               // generate a random number
 
+    bool isRunning() const { return running; }; // is emulator running
+    void togglePause() { running = !running; }; // flip running state
+
     const int displayWidth{64}; // display sizes
     const int displayHeight{32};
 
@@ -72,6 +75,7 @@ class Chip8 {
     std::uniform_int_distribution<> rnd{0, 255};                       // randomm generator with range 0-255 (1 byte)
     bool waitForKeyRelease{false};                                     // is the program waiting for a key to be released? Fx0A
     uint8_t waitingKey{};                                              // a pressed key that Fx0A is waiting to be released
+    bool running{false};                                               // is emulator running? starts off
 
     // function pointer table for opcodes
     // taken from https://austinmorlan.com/posts/chip8_emulator/#the-instructions

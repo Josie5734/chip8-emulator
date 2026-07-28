@@ -1,4 +1,5 @@
 #include "chip8.h"
+#include <cstddef>
 #include <fstream>
 #include <iostream>
 #include <random>
@@ -99,12 +100,12 @@ bool Chip8::loadROM(std::string filepath) {
     }
 
     // get end positin/length (size of file)
-    int size = file.tellg();
+    long size = file.tellg();
 
     // check if the size of the file is larger than
     // the memory size - the space that would be used for the interpreter
     // (the amount of memory available for the rom to be loaded into)
-    if (size > memory.max_size() - ROM_START_ADDRESS) {
+    if (static_cast<size_t>(size) > memory.max_size() - ROM_START_ADDRESS) {
         // filesize is larger than memory size
         std::cerr << "file is too large to put in memory\n";
         return false;

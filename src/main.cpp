@@ -25,17 +25,19 @@ int main(int argc, char *argv[]) {
     //      all ui elements should be separated from eachother by atleast 1cell (can just use defined padding for this)
     //      maybe split off drawScreen(x,y) and drawUI(x,y) into separate functions that are then called by draw() which calculates their x,y
 
-    GUI gui{chip8.display, chip8.keypad, chip8.displayWidth, chip8.displayHeight, pixelScale}; // create gui
+    GUI gui{chip8, pixelScale}; // create gui
 
     InitWindow(gui.windowWidth, gui.windowHeight, "CHIP-8"); // create raylib window
     SetTargetFPS(60);                                        // aim for 60fps for the 60hz timers
 
     while (!WindowShouldClose()) {
-        chip8.timerUpdate(); // update timers once per frame
-        // do cpu cycles multiple times per second/frame
-        for (int i = 0; i < chip8.clockSpeed; i++) {
-            gui.updateKeypad(); // update keypad state
-            chip8.cycle();      // cpu fetch/decode/execute cycle
+        if (chip8.isRunning()) { // if emulator running
+            chip8.timerUpdate(); // update timers once per frame
+            // do cpu cycles multiple times per second/frame
+            for (int i = 0; i < chip8.clockSpeed; i++) {
+                gui.updateKeypad(); // update keypad state
+                chip8.cycle();      // cpu fetch/decode/execute cycle
+            }
         }
 
         // draw loop
